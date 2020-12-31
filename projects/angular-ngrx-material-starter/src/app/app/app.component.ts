@@ -1,5 +1,5 @@
 import browser from 'browser-detect';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Store, select } from '@ngrx/store';
 import { Observable } from 'rxjs';
 
@@ -13,12 +13,20 @@ import {
   selectIsAuthenticated,
   selectSettingsStickyHeader,
   selectSettingsLanguage,
-  selectEffectiveTheme
+  selectEffectiveTheme,
+  selectAuth
 } from '../core/core.module';
 import {
   actionSettingsChangeAnimationsPageDisabled,
   actionSettingsChangeLanguage
 } from '../core/settings/settings.actions';
+
+import { SocialAuthService, SocialUser } from "angularx-social-login";
+import { FacebookLoginProvider, GoogleLoginProvider } from "angularx-social-login";
+import { AuthState } from '../core/auth/auth.models';
+import { takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+
 
 @Component({
   selector: 'anms-root',
@@ -26,32 +34,38 @@ import {
   styleUrls: ['./app.component.scss'],
   animations: [routeAnimations]
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   isProd = env.production;
   envName = env.envName;
   version = env.versions.app;
   year = new Date().getFullYear();
   logo = require('../../assets/logo.png').default;
-  languages = ['en', 'de', 'sk', 'fr', 'es', 'pt-br', 'zh-cn', 'he'];
+  languages = ['en'];
+  loginMethods = [{}]
   navigation = [
-    { link: 'about', label: 'anms.menu.about' },
-    { link: 'feature-list', label: 'anms.menu.features' },
-    { link: 'examples', label: 'anms.menu.examples' }
+
   ];
   navigationSideMenu = [
-    ...this.navigation,
-    { link: 'settings', label: 'anms.menu.settings' }
+
   ];
+  user: SocialUser;
 
   isAuthenticated$: Observable<boolean>;
   stickyHeader$: Observable<boolean>;
   language$: Observable<string>;
   theme$: Observable<string>;
-
+  loginMethods$: Observable<any>
+  auth$: Observable<AuthState>
+  destroy$: Subject<boolean> = new Subject<boolean>();
   constructor(
     private store: Store,
-    private storageService: LocalStorageService
-  ) {}
+    private storageService: LocalStorageService,
+    private authService: SocialAuthService
+  ) { }
+  ngOnDestroy(): void {
+    this.destroy$.next(true);
+    this.destroy$.complete();
+  }
 
   private static isIEorEdgeOrSafari() {
     return ['ie', 'edge', 'safari'].includes(browser().name);
@@ -68,13 +82,27 @@ export class AppComponent implements OnInit {
     }
 
     this.isAuthenticated$ = this.store.pipe(select(selectIsAuthenticated));
+    this.auth$ = this.store.pipe(select(selectAuth));
+    this.auth$.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(authState => {
+      console.log(this.user)
+      this.user = authState && authState.user
+    })
     this.stickyHeader$ = this.store.pipe(select(selectSettingsStickyHeader));
     this.language$ = this.store.pipe(select(selectSettingsLanguage));
     this.theme$ = this.store.pipe(select(selectEffectiveTheme));
   }
 
   onLoginClick() {
-    this.store.dispatch(authLogin());
+    //this.store.dispatch(authLogin({type:''}));
+  }
+
+  signIn(method): void {
+    this.authService.signIn(FacebookLoginProvider.PROVIDER_ID).then((result: SocialUser) => {
+      console.log(result)
+      this.store.dispatch(authLogin({ user: result }))
+    })
   }
 
   onLogoutClick() {

@@ -15,8 +15,8 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(authLogin),
-        tap(() =>
-          this.localStorageService.setItem(AUTH_KEY, { isAuthenticated: true })
+        tap((payload) =>
+          this.localStorageService.setItem(AUTH_KEY, { ...payload, isAuthenticated: true })
         )
       ),
     { dispatch: false }
@@ -40,5 +40,5 @@ export class AuthEffects {
     private actions$: Actions,
     private localStorageService: LocalStorageService,
     private router: Router
-  ) {}
+  ) { }
 }

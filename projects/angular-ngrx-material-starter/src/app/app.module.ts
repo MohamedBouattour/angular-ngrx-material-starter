@@ -6,7 +6,13 @@ import { CoreModule } from './core/core.module';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app/app.component';
-
+import { HomeComponent } from './home/home/home.component';
+import { HeaderComponent } from './components/header/header.component';
+import { SocialLoginModule, SocialAuthServiceConfig } from 'angularx-social-login';
+import {
+  GoogleLoginProvider,
+  FacebookLoginProvider
+} from 'angularx-social-login';
 @NgModule({
   imports: [
     // angular
@@ -17,9 +23,25 @@ import { AppComponent } from './app/app.component';
     CoreModule,
 
     // app
-    AppRoutingModule
+    AppRoutingModule,
+    SocialLoginModule
   ],
-  declarations: [AppComponent],
-  bootstrap: [AppComponent]
+  declarations: [AppComponent, HomeComponent, HeaderComponent],
+  bootstrap: [AppComponent],
+  providers: [
+    {
+      provide: 'SocialAuthServiceConfig',
+      useValue: {
+        autoLogin: false,
+        providers: [
+          {
+            id: FacebookLoginProvider.PROVIDER_ID,
+            provider: new FacebookLoginProvider('240640014131190')
+          }
+        ]
+      } as SocialAuthServiceConfig,
+    }
+  ],
+
 })
-export class AppModule {}
+export class AppModule { }
